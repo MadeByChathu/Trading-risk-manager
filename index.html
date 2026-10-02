@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Risk Manager</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#111827;--muted:#6b7280;--border:#e5e7eb;--accent:#2563eb;--danger:#dc2626;--good:#059669}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+.wrap{max-width:1050px;margin:0 auto;padding:28px 18px}.top{margin-bottom:22px}.top h1{margin:0 0 6px;font-size:28px}.top p{margin:0;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px}
+h2{font-size:18px;margin:0 0 14px}.field{margin-bottom:12px}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:#4b5563}
+input,select{width:100%;padding:11px 12px;border:1px solid #d1d5db;border-radius:9px;font-size:15px;background:white;color:var(--text)}
+input:focus,select:focus{outline:2px solid #bfdbfe;border-color:var(--accent)}
+.metric{font-size:23px;font-weight:800;margin-top:5px}.muted{font-size:12px;color:var(--muted)}.danger{color:var(--danger)}.good{color:var(--good)}
+button{border:0;background:var(--accent);color:#fff;font-weight:700;padding:11px 15px;border-radius:9px;cursor:pointer}button.secondary{background:#fff;color:var(--text);border:1px solid var(--border)}
+.actions{display:flex;gap:9px;flex-wrap:wrap}.warning{color:var(--danger);font-size:13px;min-height:20px;margin-top:8px}
+.trade{border:1px solid var(--border);border-radius:12px;padding:13px;margin-top:10px;display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap}
+@media(max-width:700px){.grid,.grid3{grid-template-columns:1fr}.wrap{padding:20px 12px}.top h1{font-size:24px}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+<div class="top"><h1>Trading Risk Manager</h1><p>Forex + Crypto • Pre-trade risk calculator • Trade journal • Win rate & P&L</p></div>
+
+<div class="card">
+<h2>1. Pre-Trade Calculator</h2>
+<div class="grid">
+<div class="field"><label>Market</label><select id="market"><option>Forex</option><option>Crypto</option></select></div>
+<div class="field"><label>Direction</label><select id="direction"><option>Long / Buy</option><option>Short / Sell</option></select></div>
+<div class="field"><label>Symbol</label><input id="symbol" value="BTCUSDT"></div>
+<div class="field"><label>Account Balance ($)</label><input id="balance" type="number" min="0" step="any" value="100"></div>
+<div class="field"><label>Risk (%)</label><input id="riskPct" type="number" min="0" step="any" value="1"></div>
+<div class="field"><label>Entry Price</label><input id="entry" type="number" min="0" step="any" value="120000"></div>
+<div class="field"><label>Stop Loss</label><input id="sl" type="number" min="0" step="any" value="119000"></div>
+<div class="field"><label>Take Profit</label><input id="tp" type="number" min="0" step="any" value="122000"></div>
+<div class="field"><label>Leverage</label><input id="leverage" type="number" min="1" step="any" value="1"></div>
+<div class="field"><label>Fee per side (%)</label><input id="fee" type="number" min="0" step="any" value="0"></div>
+</div>
+<div class="warning" id="warning"></div>
+</div>
+
+<div class="grid3" style="margin-top:16px">
+<div class="card"><div class="muted">Risk Amount</div><div class="metric" id="riskOut">$0.00</div></div>
+<div class="card"><div class="muted">Potential Loss</div><div class="metric danger" id="lossOut">-$0.00</div></div>
+<div class="card"><div class="muted">Potential Profit</div><div class="metric good" id="profitOut">+$0.00</div></div>
+<div class="card"><div class="muted">Risk : Reward</div><div class="metric" id="rrOut">—</div></div>
+<div class="card"><div class="muted">Position Size</div><div class="metric" id="sizeOut">—</div></div>
+<div class="card"><div class="muted">Margin Required</div><div class="metric" id="marginOut">—</div></div>
+</div>
+
+<div class="card" style="margin-top:16px">
+<h2>2. Add Closed Trade</h2>
+<div class="grid">
+<div class="field"><label>Realized P&L ($)</label><input id="realized" type="number" step="any" value="0"></div>
+<div class="field"><label>Result</label><select id="result"><option>Win</option><option>Loss</option><option>Break-even</option></select></div>
+</div>
+<div class="field"><label>Setup / Note</label><input id="note" placeholder="SMC, breakout, reversal..."></div>
+<div class="actions"><button id="addTrade">Add Trade</button><button class="secondary" id="clear">Clear Journal</button></div>
+</div>
+
+<div class="grid3" style="margin-top:16px">
+<div class="card"><div class="muted">Total Trades</div><div class="metric" id="tradesOut">0</div></div>
+<div class="card"><div class="muted">Win Rate</div><div class="metric" id="winOut">0.0%</div></div>
+<div class="card"><div class="muted">Net P&L</div><div class="metric" id="netOut">$0.00</div></div>
+<div class="card"><div class="muted">Average Win</div><div class="metric" id="avgWinOut">$0.00</div></div>
+<div class="card"><div class="muted">Average Loss</div><div class="metric" id="avgLossOut">$0.00</div></div>
+<div class="card"><div class="muted">Profit Factor</div><div class="metric" id="pfOut">—</div></div>
+</div>
+
+<div style="margin-top:16px"><h2>Trade Journal</h2><div id="journal"><p class="muted">No trades recorded yet.</p></div></div>
+</div>
+
+<script>
+(() => {
+const $=id=>document.getElementById(id);
+let trades=[];
+const money=v=>'$'+(Number.isFinite(v)?v:0).toFixed(2);
+
+function calc(){
+ const bal=+$('balance').value||0, rp=+$('riskPct').value||0, e=+$('entry').value||0;
+ const sl=+$('sl').value||0,tp=+$('tp').value||0,lev=Math.max(1,+$('leverage').value||1);
+ const fee=Math.max(0,+$('fee').value||0),dir=$('direction').value;
+ const risk=bal*rp/100, stopDist=Math.abs(e-sl), targetDist=Math.abs(tp-e);
+ const size=stopDist>0?risk/stopDist:0, gross=size*targetDist, feeCost=size*e*(fee/100)*2;
+ const profit=Math.max(0,gross-feeCost), loss=risk+feeCost, rr=loss>0?profit/loss:0, margin=size*e/lev;
+ $('riskOut').textContent=money(risk); $('lossOut').textContent='-'+money(loss);
+ $('profitOut').textContent='+'+money(profit); $('rrOut').textContent=rr?'1 : '+rr.toFixed(2):'—';
+ $('sizeOut').textContent=size?size.toFixed(8):'—'; $('marginOut').textContent=size?money(margin):'—';
+ let w='';
+ if(bal<=0||e<=0||sl<=0||tp<=0) w='Enter valid positive values.';
+ else if(dir==='Long / Buy'&&(sl>=e||tp<=e)) w='For Long: SL must be below Entry and TP above Entry.';
+ else if(dir==='Short / Sell'&&(sl<=e||tp>=e)) w='For Short: SL must be above Entry and TP below Entry.';
+ $('warning').textContent=w;
+ return {e,sl,tp};
+}
+function render(){
+ const wins=trades.filter(t=>t.result==='Win'), losses=trades.filter(t=>t.result==='Loss');
+ const net=trades.reduce((a,t)=>a+t.pnl,0), gp=wins.reduce((a,t)=>a+t.pnl,0);
+ const gl=Math.abs(losses.reduce((a,t)=>a+t.pnl,0));
+ $('tradesOut').textContent=trades.length;
+ $('winOut').textContent=(trades.length?wins.length/trades.length*100:0).toFixed(1)+'%';
+ $('netOut').textContent=money(net); $('avgWinOut').textContent=money(wins.length?gp/wins.length:0);
+ $('avgLossOut').textContent=money(losses.length?gl/losses.length:0); $('pfOut').textContent=gl? (gp/gl).toFixed(2):'—';
+ $('journal').innerHTML=trades.length?trades.slice().reverse().map(t=>`
+ <div class="trade"><div><b>${t.symbol}</b> · ${t.direction}<div class="muted">Entry ${t.entry} · SL ${t.sl} · TP ${t.tp} · ${t.note||'No note'}</div></div>
+ <div><b class="${t.pnl>=0?'good':'danger'}">${t.pnl>=0?'+':''}${money(t.pnl)}</b><div class="muted">${t.result}</div></div></div>`).join(''):'<p class="muted">No trades recorded yet.</p>';
+}
+['market','direction','symbol','balance','riskPct','entry','sl','tp','leverage','fee'].forEach(id=>$(id).addEventListener('input',calc));
+$('addTrade').addEventListener('click',()=>{
+ const c=calc(); if($('warning').textContent)return;
+ trades.push({symbol:$('symbol').value||'Unknown',direction:$('direction').value,entry:c.e,sl:c.sl,tp:c.tp,pnl:+$('realized').value||0,result:$('result').value,note:$('note').value});
+ $('realized').value=0;$('note').value='';render();
+});
+$('clear').addEventListener('click',()=>{trades=[];render()});
+calc();render();
+})();
+</script>
+</body>
+</html>
